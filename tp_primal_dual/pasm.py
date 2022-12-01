@@ -76,7 +76,7 @@ def pb_2():
                    [0.2026],
                    [0.6721]])
 
-    x = np.reshape(np.array([random() for _ in Q]), (-1, 1))
+    x = np.zeros((Q.shape[0],1))
 
     x, flag, mu, iter = pasm(Q, c, Ai, bi, itermax, 10e-5, x)
 
@@ -111,7 +111,7 @@ def pb_3():
 
     Ai = np.ones((1,Q.shape[0]))
 
-    bi = np.zeros((Q.shape[0], 1))
+    bi = 0
 
     x = np.zeros((Q.shape[0],1))
 
@@ -153,10 +153,7 @@ def pb_4():
         [-1.]
     ])
 
-    x, flag, mu, iter = pasm(Q, c, np.eye(Q.shape[0]), bi, itermax, 10e-5, x)[3]
-
-    print(iter)
-    print(x)
+    x, flag, mu, iter = pasm(Q, c, np.eye(Q.shape[0]), bi, itermax, 10e-5, x)
 
 if __name__ == '__main__':
     pb_3()
