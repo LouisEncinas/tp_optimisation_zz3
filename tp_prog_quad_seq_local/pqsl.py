@@ -12,7 +12,7 @@ def pqsl(x0:np.ndarray, lambda0:np.ndarray, f, h, gradf, gradh, grad2f, grad2h, 
         hk, gradfk, gradhk, grad2fk, grad2hk = h(xk), gradf(xk), gradh(xk), grad2f(xk), grad2h(xk)
 
         #------------------------------------------------------------ étape 1
-        grad2Lapl = deepcopy(grad2fk)
+        grad2Lapl = grad2fk
         for index in range(len(lambdak)):
             grad2Lapl += lambdak[index,0] * grad2hk # une seule condition pour le moment
 
@@ -44,9 +44,9 @@ class VerificationResultat(ut.TestCase):
         x01 = np.array([[1.],[-1.]])
         x02 = np.array([[-3/2],[2.]])
         x03 = np.array([[-.1],[1.]])
+        lambda0 = np.array([[1.]])
 
         #------------------------------------------------------------ initialisation f et h
-        lambda0 = np.array([[1.]])
         f = lambda x : x[0,0] + x[1,0]
         gradf = lambda x : np.ones((2,1))
         grad2f = lambda x : np.zeros((2,2))
@@ -59,6 +59,7 @@ class VerificationResultat(ut.TestCase):
         x2, lam2 = pqsl(x02, lambda0, f, h, gradf, gradh, grad2f, grad2h)
         x3, lam3 = pqsl(x03, lambda0, f, h, gradf, gradh, grad2f, grad2h)
 
+        #------------------------------------------------------------ Test
         np.testing.assert_array_almost_equal(x1, np.array([[-7.07107e-1],[2.92893e-1]]))
         np.testing.assert_array_almost_equal(x2, np.array([[-7.07107e-1],[2.92893e-1]]))
         np.testing.assert_array_almost_equal(x3, np.array([[-7.07107e-1],[2.92893e-1]]))
@@ -69,9 +70,9 @@ class VerificationResultat(ut.TestCase):
     def test_problem_2(self):
         #------------------------------------------------------------ initialisation x0
         x0 = np.array([[-1.],[0.]])
+        lambda0 = np.array([[1.]])
 
         #------------------------------------------------------------ initialisation f et h
-        lambda0 = np.array([[1.]])
         f = lambda x : 100*(x[1,0] - x[0,0]**2)**2 + (1. - x[0,0])**2
         gradf = lambda x : np.array([
             [-400*x[0,0]*x[1,0] + 400*x[0,0]**3 + 2*x[0,0] - 2],
@@ -81,19 +82,20 @@ class VerificationResultat(ut.TestCase):
             [-400*x[1,0] + 1200*x[0,0]**2 + 2, -400*x[0,0]],
             [-400*x[0,0], 200.]
         ])
-        h = lambda x : x[0,0] + x[1,0]**2 - 1/2
+        h = lambda x : x[0,0] - x[1,0]**2 - 1/2
         gradh = lambda x : np.array([
             [1.],
-            [2*x[1,0]]
+            [-2*x[1,0]]
         ])
         grad2h = lambda x : np.array([
             [0., 0.],
-            [0., 2.]
+            [0., -2.]
         ])
 
         #------------------------------------------------------------ solve
         x, lam = pqsl(x0, lambda0, f, h, gradf, gradh, grad2f, grad2h)
 
+        #------------------------------------------------------------ Test
         np.testing.assert_array_almost_equal(x, np.array([[6.64029e-1],[4.05006e-1]]))
         np.testing.assert_array_almost_equal(lam, np.array([[-8.87139]]))
 
