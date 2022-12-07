@@ -1,6 +1,5 @@
 import numpy as np
 import unittest as ut
-from copy import deepcopy
 
 def pqsl(x0:np.ndarray, lambda0:np.ndarray, f, h, gradf, gradh, grad2f, grad2h, epsilon:float=10e-6, maxit:int=100):
 
@@ -10,17 +9,20 @@ def pqsl(x0:np.ndarray, lambda0:np.ndarray, f, h, gradf, gradh, grad2f, grad2h, 
 
     while iter < maxit:
         hk, gradfk, gradhk, grad2fk, grad2hk = h(xk), gradf(xk), gradh(xk), grad2f(xk), grad2h(xk)
+        nb_cond = len(hk)
 
         #------------------------------------------------------------ étape 1
         grad2Lapl = grad2fk
         for index in range(len(lambdak)):
-            grad2Lapl += lambdak[index,0] * grad2hk # une seule condition pour le moment
+            grad2Lapl += lambdak[index,0] * grad2hk[index] # une seule condition pour le moment
 
         #------------------------------------------------------------ étape 2
-        umatrix = np.concatenate((grad2Lapl,gradhk), axis=1)
-        dmatrix = np.concatenate((gradhk.T, np.zeros((1,1))), axis=1)
+        Dhk = np.concatenate(gradhk, axis=1)
+        _hk = np.array([[el] for el in hk])
+        umatrix = np.concatenate((grad2Lapl,Dhk), axis=1)
+        dmatrix = np.concatenate((Dhk.T, np.zeros((nb_cond,nb_cond))), axis=1)
         lmatrix = np.concatenate((umatrix, dmatrix), axis=0)
-        rmatrix = -np.concatenate((gradfk, np.array([[hk]])), axis=0)
+        rmatrix = -np.concatenate((gradfk, _hk), axis=0)
         sol = np.linalg.solve(lmatrix, rmatrix)
 
         xk = xk + sol[0:2,:]
@@ -29,7 +31,7 @@ def pqsl(x0:np.ndarray, lambda0:np.ndarray, f, h, gradf, gradh, grad2f, grad2h, 
         #------------------------------------------------------------ verif
         gradLapl = gradf(xk)
         for index in range(len(lambdak)):
-            gradLapl += lambdak[index,0] * gradh(xk)
+            gradLapl += lambdak[index,0] * gradh(xk)[index]
 
         iter += 1
         if np.linalg.norm(gradLapl) <= epsilon:
@@ -50,9 +52,9 @@ class VerificationResultat(ut.TestCase):
         f = lambda x : x[0,0] + x[1,0]
         gradf = lambda x : np.ones((2,1))
         grad2f = lambda x : np.zeros((2,2))
-        h = lambda x : x[0,0]**2 + (x[1,0] - 1)**2 - 1
-        gradh = lambda x : np.array([[2*x[0,0]],[2*x[1,0]-2]])
-        grad2h = lambda x : 2*np.eye(2)
+        h = lambda x : [x[0,0]**2 + (x[1,0] - 1)**2 - 1,]
+        gradh = lambda x : [np.array([[2*x[0,0]],[2*x[1,0]-2]]),]
+        grad2h = lambda x : [2*np.eye(2),]
 
         #------------------------------------------------------------ solve
         x1, lam1 = pqsl(x01, lambda0, f, h, gradf, gradh, grad2f, grad2h)
@@ -82,15 +84,15 @@ class VerificationResultat(ut.TestCase):
             [-400*x[1,0] + 1200*x[0,0]**2 + 2, -400*x[0,0]],
             [-400*x[0,0], 200.]
         ])
-        h = lambda x : x[0,0] - x[1,0]**2 - 1/2
-        gradh = lambda x : np.array([
+        h = lambda x : [x[0,0] - x[1,0]**2 - 1/2,]
+        gradh = lambda x : [np.array([
             [1.],
             [-2*x[1,0]]
-        ])
-        grad2h = lambda x : np.array([
+        ]),]
+        grad2h = lambda x : [np.array([
             [0., 0.],
             [0., -2.]
-        ])
+        ]),]
 
         #------------------------------------------------------------ solve
         x, lam = pqsl(x0, lambda0, f, h, gradf, gradh, grad2f, grad2h)
