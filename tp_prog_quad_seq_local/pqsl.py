@@ -1,10 +1,16 @@
 import numpy as np
 import unittest as ut
 
+def laplacien(fk, lambdak, hk) -> np.ndarray:
+    lapl = fk
+    for index in range(len(hk)): lapl += lambdak[index,0] * hk[index]
+    return lapl
+
 def pqsl(x0:np.ndarray, lambda0:np.ndarray, f, h, gradf, gradh, grad2f, grad2h, epsilon:float=10e-6, maxit:int=100):
 
     #------------------------------------------------------------ Initialisation
     iter = 0
+    nb_comp = len(x0)
     xk, lambdak = x0, lambda0
 
     while iter < maxit:
@@ -12,26 +18,21 @@ def pqsl(x0:np.ndarray, lambda0:np.ndarray, f, h, gradf, gradh, grad2f, grad2h, 
         nb_cond = len(hk)
 
         #------------------------------------------------------------ étape 1
-        grad2Lapl = grad2fk
-        for index in range(len(lambdak)):
-            grad2Lapl += lambdak[index,0] * grad2hk[index] # une seule condition pour le moment
+        grad2Lapl = laplacien(grad2fk, lambdak, grad2hk)
 
         #------------------------------------------------------------ étape 2
         Dhk = np.concatenate(gradhk, axis=1)
-        _hk = np.array([[el] for el in hk])
-        umatrix = np.concatenate((grad2Lapl,Dhk), axis=1)
+        umatrix = np.concatenate((grad2Lapl, Dhk), axis=1)
         dmatrix = np.concatenate((Dhk.T, np.zeros((nb_cond,nb_cond))), axis=1)
         lmatrix = np.concatenate((umatrix, dmatrix), axis=0)
-        rmatrix = -np.concatenate((gradfk, _hk), axis=0)
+        rmatrix = -np.concatenate((gradfk, np.array([[el] for el in hk])), axis=0)
         sol = np.linalg.solve(lmatrix, rmatrix)
 
-        xk = xk + sol[0:2,:]
-        lambdak = sol[2:,:]
+        xk = xk + sol[0:nb_comp,:]
+        lambdak = sol[nb_comp:,:]
 
-        #------------------------------------------------------------ verif
-        gradLapl = gradf(xk)
-        for index in range(len(lambdak)):
-            gradLapl += lambdak[index,0] * gradh(xk)[index]
+        #------------------------------------------------------------ vérification
+        gradLapl = laplacien(gradfk, lambdak, gradhk)
 
         iter += 1
         if np.linalg.norm(gradLapl) <= epsilon:
