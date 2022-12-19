@@ -64,9 +64,9 @@ class VerificationResultat(ut.TestCase):
         grad2h = lambda x : [2*np.eye(2),]
 
         #------------------------------------------------------------ solve
-        x1, lam1, iter = pqsl(x01, lambda0, f, h, gradf, gradh, grad2f, grad2h)
-        x2, lam2, iter = pqsl(x02, lambda0, f, h, gradf, gradh, grad2f, grad2h)
-        x3, lam3, iter = pqsl(x03, lambda0, f, h, gradf, gradh, grad2f, grad2h)
+        x1, lam1, _ = pqsl(x01, lambda0, f, h, gradf, gradh, grad2f, grad2h)
+        x2, lam2, _ = pqsl(x02, lambda0, f, h, gradf, gradh, grad2f, grad2h)
+        x3, lam3, _ = pqsl(x03, lambda0, f, h, gradf, gradh, grad2f, grad2h)
 
         #------------------------------------------------------------ Test
         np.testing.assert_array_almost_equal(x1, np.array([[-7.07107e-1],[2.92893e-1]]))
@@ -102,7 +102,7 @@ class VerificationResultat(ut.TestCase):
         ]),]
 
         #------------------------------------------------------------ solve
-        x, lam, iter = pqsl(x0, lambda0, f, h, gradf, gradh, grad2f, grad2h)
+        x, lam, _ = pqsl(x0, lambda0, f, h, gradf, gradh, grad2f, grad2h)
 
         #------------------------------------------------------------ Test
         np.testing.assert_array_almost_equal(x, np.array([[6.64029e-1],[4.05006e-1]]))
