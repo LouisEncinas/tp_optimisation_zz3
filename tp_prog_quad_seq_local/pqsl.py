@@ -1,14 +1,12 @@
 import numpy as np
 import unittest as ut
 
-VAR = 10
-
 def laplacien(fk, lambdak, hk) -> np.ndarray:
     lapl = fk
     for index in range(len(hk)): lapl += lambdak[index,0] * hk[index]
     return lapl
 
-def pqsl(x0:np.ndarray, lambda0:np.ndarray, f, h, gradf, gradh, grad2f, grad2h, ineq:list=[], epsilon:float=10e-6, maxit:int=100):
+def pqsl(x0:np.ndarray, lambda0:np.ndarray, f, h, gradf, gradh, grad2f, grad2h, epsilon:float=10e-6, maxit:int=100):
 
     #------------------------------------------------------------ Initialisation
     iter = 0
@@ -17,16 +15,12 @@ def pqsl(x0:np.ndarray, lambda0:np.ndarray, f, h, gradf, gradh, grad2f, grad2h, 
 
     while iter < maxit:
         hk, gradfk, gradhk, grad2fk, grad2hk = h(xk), gradf(xk), gradh(xk), grad2f(xk), grad2h(xk)
-
-        #------------------------------------------------------------ Correction de la var d'écart z (Marche pas)
-        for index in range(len(xk)):
-            if xk[index,0] < 0 and index in ineq: hk[index] -= xk[index,0]
         nb_cond = len(hk)
 
-        #------------------------------------------------------------ étape 1
+        #------------------------------------------------------------ Ã©tape 1
         grad2Lapl = laplacien(grad2fk, lambdak, grad2hk)
 
-        #------------------------------------------------------------ étape 2
+        #------------------------------------------------------------ Ã©tape 2
         Dhk = np.concatenate(gradhk, axis=1)
         umatrix = np.concatenate((grad2Lapl, Dhk), axis=1)
         dmatrix = np.concatenate((Dhk.T, np.zeros((nb_cond,nb_cond))), axis=1)
@@ -37,7 +31,7 @@ def pqsl(x0:np.ndarray, lambda0:np.ndarray, f, h, gradf, gradh, grad2f, grad2h, 
         xk = xk + sol[0:nb_comp,:]
         lambdak = sol[nb_comp:,:]
 
-        #------------------------------------------------------------ vérification
+        #------------------------------------------------------------ vÃ©rification
         gradLapl = laplacien(gradfk, lambdak, gradhk)
 
         iter += 1
@@ -110,52 +104,62 @@ class VerificationResultat(ut.TestCase):
 
     def test_problem_3(self):
         #------------------------------------------------------------ initialisation x0
-        x0 = 2*np.ones((3,1))
+        x0 = 2*np.ones((6,1))
         lambda0 = np.ones((5,1))
-        ineq = [2,3,4]
 
         #------------------------------------------------------------ initialisation f et h
         f = lambda x : 1000 - x[0,0]**2 - 2*x[1,0]**2 - x[2,0]**2 - x[0,0]*x[1,0] - x[0,0]*x[2,0]
         gradf = lambda x : np.array([
             [-2*x[0,0] - x[1,0] - x[2,0]],
             [-4*x[1,0] - x[0,0]         ],
-            [-2*x[2,0] - x[0,0]         ]
+            [-2*x[2,0] - x[0,0]         ],
+            [0.],
+            [0.],
+            [0.]
         ])
         grad2f = lambda x : np.array([
-            [-2., -1., -1.],
-            [-1., -4., 0. ],
-            [-1., 0. , -2.]
+            [-2., -1., -1., 0., 0., 0.],
+            [-1., -4., 0. , 0., 0., 0.],
+            [-1., 0. , -2., 0., 0., 0.],
+            [0., 0., 0., 0., 0., 0.],
+            [0., 0., 0., 0., 0., 0.],
+            [0., 0., 0., 0., 0., 0.]
         ])
         h = lambda x : [
             8*x[0,0] + 14*x[1,0] + 7*x[2,0] - 56,
             x[0,0]**2 + x[1,0]**2 + x[2,0]**2 - 25,
-            x[0,0],
-            x[1,0],
-            x[2,0]
+            x[0,0] - x[3,0]**2,
+            x[1,0] - x[4,0]**2,
+            x[2,0] - x[5,0]**2
         ]
         gradh = lambda x : [np.array([
             [8. ],
             [14.],
-            [7. ]       
+            [7. ],
+            [0. ],
+            [0. ],
+            [0. ]       
         ]), np.array([
             [2*x[0,0]],
             [2*x[1,0]],
-            [2*x[2,0]]
-        ]), np.array([[1.],[0.],[0.]]),
-        np.array([[0.],[1.],[0.]]),
-        np.array([[0.],[0.],[1.]])]
-        grad2h = lambda x : [np.zeros((3,3)), 2*np.eye(3), np.zeros((3,3)), np.zeros((3,3)), np.zeros((3,3))]
+            [2*x[2,0]],
+            [0. ],
+            [0. ],
+            [0. ]
+        ]), np.array([[1.],[0.],[0.],[-2*x[3,0]],[0.],[0.]]),
+        np.array([[0.],[1.],[0.],[0.],[-2*x[4,0]],[0.]]),
+        np.array([[0.],[0.],[1.],[0.],[0.],[-2*x[5,0]]])]
+        grad2h = lambda x : [np.zeros((6,6)),
+        np.array([[2., 0., 0., 0., 0., 0.], [0., 2., 0., 0., 0., 0.], [0., 0., 2., 0., 0., 0.], [0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., 0., 0.]]),
+        np.array([[0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., 0., 0.], [0., 0., 0., -2., 0., 0.], [0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., 0., 0.]]),
+        np.array([[0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., -2., 0.], [0., 0., 0., 0., 0., 0.]]),
+        np.array([[0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., 0., 0.], [0., 0., 0., 0., 0., -2.]])]
 
         #------------------------------------------------------------ solve
-        x, lam, iter = pqsl(x0, lambda0, f, h, gradf, gradh, grad2f, grad2h, ineq)
-
-        print(iter)
-        print(lam)
-        print(x)
+        x, lam, iter = pqsl(x0, lambda0, f, h, gradf, gradh, grad2f, grad2h)
 
         # #------------------------------------------------------------ Test
-        # np.testing.assert_array_almost_equal(x, np.array([[6.64029e-1],[4.05006e-1]]))
-        # np.testing.assert_array_almost_equal(lam, np.array([[-8.87139]]))
+        np.testing.assert_array_almost_equal(x[:3,:], np.array([[3.512121],[0.216988],[3.552171]]))
 
 if __name__ == '__main__':
     ut.main()
